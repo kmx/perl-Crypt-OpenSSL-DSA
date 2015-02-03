@@ -1,12 +1,13 @@
 Changes
+DSA.xs
+hints/MSWin32.pl
 lib/Crypt/OpenSSL/DSA.pm
 lib/Crypt/OpenSSL/DSA/Signature.pod
-DSA.xs
 Makefile.PL
 MANIFEST
+META.yml			Module meta-data (added by MakeMaker)
 README
-typemap
 t/00-use.t
 t/10-selftest.t
 t/90-openssl-compat.t
-META.yml                                 Module meta-data (added by MakeMaker)
+typemap
