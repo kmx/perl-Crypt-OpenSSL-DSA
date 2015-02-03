@@ -6,6 +6,6 @@ WriteMakefile(
     'VERSION_FROM'	=> 'lib/Crypt/OpenSSL/DSA.pm', # finds $VERSION
     'PREREQ_PM'		=> {}, # e.g., Module::Name => 1.1
     'AUTHOR'            => 'T.J. Mather',
-    'LIBS'              => ['-lssl -lcrypto'],
+    'LIBS'              => ['-lcrypto'],
     'DEFINE'            => '-DPERL5',   # perl-5.8/gcc-3.2 needs this
 );
