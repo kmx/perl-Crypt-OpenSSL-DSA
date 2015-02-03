@@ -20,12 +20,18 @@
 
 =head1 CLASS METHODS
 
+=over
+
 =item $sig_obj = Crypt::OpenSSL::DSA::Signature->new();
 
 Create a new DSA Signature Object.  You will need to
 call set_r and set_s after you create this.
 
+=back
+
 =head1 OBJECT METHODS
+
+=over
 
 =item $r = $sig_obj->get_r;
 
@@ -42,6 +48,8 @@ Sets first member of signature pair.
 =item $s = $sig_obj->set_s;
 
 Sets second member of signature pair.
+
+=back
 
 =head1 AUTHOR
 
