@@ -8,4 +8,10 @@ WriteMakefile(
     'AUTHOR'            => 'T.J. Mather',
     'LIBS'              => ['-lcrypto'],
     'DEFINE'            => '-DPERL5',   # perl-5.8/gcc-3.2 needs this
+    'META_MERGE'        => {
+      resources => {
+        repository => 'https://github.com/kmx/perl-Crypt-OpenSSL-DSA',
+      },
+    },
+    dist => { TARFLAGS => '--owner=0 --group=0 -cvf' }, 
 );
