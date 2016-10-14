@@ -18,6 +18,95 @@ extern "C" {
 }
 #endif
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static void DSA_get0_pqg(const DSA *d,
+                  const BIGNUM **p, const BIGNUM **q, const BIGNUM **g)
+{
+    if (p != NULL)
+        *p = d->p;
+    if (q != NULL)
+        *q = d->q;
+    if (g != NULL)
+        *g = d->g;
+}
+
+static int DSA_set0_pqg(DSA *d, BIGNUM *p, BIGNUM *q, BIGNUM *g)
+{
+    /* If the fields p, q and g in d are NULL, the corresponding input
+     * parameters MUST be non-NULL.
+     */
+    if ((d->p == NULL && p == NULL)
+        || (d->q == NULL && q == NULL)
+        || (d->g == NULL && g == NULL))
+        return 0;
+
+    if (p != NULL) {
+        BN_free(d->p);
+        d->p = p;
+    }
+    if (q != NULL) {
+        BN_free(d->q);
+        d->q = q;
+    }
+    if (g != NULL) {
+        BN_free(d->g);
+        d->g = g;
+    }
+
+    return 1;
+}
+
+static void DSA_get0_key(const DSA *d,
+                  const BIGNUM **pub_key, const BIGNUM **priv_key)
+{
+    if (pub_key != NULL)
+        *pub_key = d->pub_key;
+    if (priv_key != NULL)
+        *priv_key = d->priv_key;
+}
+
+static int DSA_set0_key(DSA *d, BIGNUM *pub_key, BIGNUM *priv_key)
+{
+    /* If the field pub_key in d is NULL, the corresponding input
+     * parameters MUST be non-NULL.  The priv_key field may
+     * be left NULL.
+     */
+    if (d->pub_key == NULL && pub_key == NULL)
+        return 0;
+
+    if (pub_key != NULL) {
+        BN_free(d->pub_key);
+        d->pub_key = pub_key;
+    }
+    if (priv_key != NULL) {
+        BN_free(d->priv_key);
+        d->priv_key = priv_key;
+    }
+
+    return 1;
+}
+
+static void DSA_SIG_get0(const DSA_SIG *sig, const BIGNUM **pr,
+     const BIGNUM **ps)
+{
+    if (pr != NULL)
+        *pr = sig->r;
+    if (ps != NULL)
+        *ps = sig->s;
+}
+
+static int DSA_SIG_set0(DSA_SIG *sig, BIGNUM *r, BIGNUM *s)
+{
+    if (r == NULL || s == NULL)
+        return 0;
+    BN_clear_free(sig->r);
+    BN_clear_free(sig->s);
+    sig->r = r;
+    sig->s = s;
+    return 1;
+}
+#endif
+
 MODULE = Crypt::OpenSSL::DSA         PACKAGE = Crypt::OpenSSL::DSA
 
 PROTOTYPES: DISABLE
@@ -257,11 +346,13 @@ SV *
 get_p(dsa)
         DSA *dsa
     PREINIT:
+        const BIGNUM *p;
         char *to;
         int len;
     CODE:
+        DSA_get0_pqg(dsa, &p, NULL, NULL);
         to = malloc(sizeof(char) * 128);
-        len = BN_bn2bin(dsa->p, to);
+        len = BN_bn2bin(p, to);
         RETVAL = newSVpvn(to, len);
         free(to);
     OUTPUT:
@@ -271,11 +362,13 @@ SV *
 get_q(dsa)
         DSA *dsa
     PREINIT:
+        const BIGNUM *q;
         char *to;
         int len;
     CODE:
+        DSA_get0_pqg(dsa, NULL, &q, NULL);
         to = malloc(sizeof(char) * 20);
-        len = BN_bn2bin(dsa->q, to);
+        len = BN_bn2bin(q, to);
         RETVAL = newSVpvn(to, len);
         free(to);
     OUTPUT:
@@ -285,11 +378,13 @@ SV *
 get_g(dsa)
         DSA *dsa
     PREINIT:
+        const BIGNUM *g;
         char *to;
         int len;
     CODE:
+        DSA_get0_pqg(dsa, NULL, NULL, &g);
         to = malloc(sizeof(char) * 128);
-        len = BN_bn2bin(dsa->g, to);
+        len = BN_bn2bin(g, to);
         RETVAL = newSVpvn(to, len);
         free(to);
     OUTPUT:
@@ -299,11 +394,13 @@ SV *
 get_pub_key(dsa)
         DSA *dsa
     PREINIT:
+        const BIGNUM *pub_key;
         char *to;
         int len;
     CODE:
+        DSA_get0_key(dsa, &pub_key, NULL);
         to = malloc(sizeof(char) * 128);
-        len = BN_bn2bin(dsa->pub_key, to);
+        len = BN_bn2bin(pub_key, to);
         RETVAL = newSVpvn(to, len);
         free(to);
     OUTPUT:
@@ -313,11 +410,13 @@ SV *
 get_priv_key(dsa)
         DSA *dsa
     PREINIT:
+        const BIGNUM *priv_key;
         char *to;
         int len;
     CODE:
+        DSA_get0_key(dsa, NULL, &priv_key);
         to = malloc(sizeof(char) * 128);
-        len = BN_bn2bin(dsa->priv_key, to);
+        len = BN_bn2bin(priv_key, to);
         RETVAL = newSVpvn(to, len);
         free(to);
     OUTPUT:
@@ -329,9 +428,40 @@ set_p(dsa, p_SV)
         SV * p_SV
     PREINIT:
         int len;
+        BIGNUM *p;
+        BIGNUM *q;
+        BIGNUM *g;
+        const BIGNUM *old_q;
+        const BIGNUM *old_g;
     CODE:
         len = SvCUR(p_SV);
-        dsa->p = BN_bin2bn(SvPV(p_SV, len), len, NULL);
+        p = BN_bin2bn(SvPV(p_SV, len), len, NULL);
+        DSA_get0_pqg(dsa, NULL, &old_q, &old_g);
+        if (NULL == old_q) {
+            q = BN_new();
+        } else {
+            q = BN_dup(old_q);
+        }
+        if (NULL == q) {
+            BN_free(p);
+            croak("Could not duplicate another prime");
+        }
+        if (NULL == old_g) {
+            g = BN_new();
+        } else {
+            g = BN_dup(old_g);
+        }
+        if (NULL == g) {
+            BN_free(p);
+            BN_free(q);
+            croak("Could not duplicate another prime");
+        }
+        if (!DSA_set0_pqg(dsa, p, q, g)) {
+            BN_free(p);
+            BN_free(q);
+            BN_free(g);
+            croak("Could not set a prime");
+        }
 
 void
 set_q(dsa, q_SV)
@@ -339,9 +469,40 @@ set_q(dsa, q_SV)
         SV * q_SV
     PREINIT:
         int len;
+        BIGNUM *p;
+        BIGNUM *q;
+        BIGNUM *g;
+        const BIGNUM *old_p;
+        const BIGNUM *old_g;
     CODE:
         len = SvCUR(q_SV);
-        dsa->q = BN_bin2bn(SvPV(q_SV, len), len, NULL);
+        q = BN_bin2bn(SvPV(q_SV, len), len, NULL);
+        DSA_get0_pqg(dsa, &old_p, NULL, &old_g);
+        if (NULL == old_p) {
+            p = BN_new();
+        } else {
+            p = BN_dup(old_p);
+        }
+        if (NULL == p) {
+            BN_free(q);
+            croak("Could not duplicate another prime");
+        }
+        if (NULL == old_g) {
+            g = BN_new();
+        } else {
+            g = BN_dup(old_g);
+        }
+        if (NULL == g) {
+            BN_free(p);
+            BN_free(q);
+            croak("Could not duplicate another prime");
+        }
+        if (!DSA_set0_pqg(dsa, p, q, g)) {
+            BN_free(p);
+            BN_free(q);
+            BN_free(g);
+            croak("Could not set a prime");
+        }
 
 void
 set_g(dsa, g_SV)
@@ -349,9 +510,40 @@ set_g(dsa, g_SV)
         SV * g_SV
     PREINIT:
         int len;
+        BIGNUM *p;
+        BIGNUM *q;
+        BIGNUM *g;
+        const BIGNUM *old_p;
+        const BIGNUM *old_q;
     CODE:
         len = SvCUR(g_SV);
-        dsa->g = BN_bin2bn(SvPV(g_SV, len), len, NULL);
+        g = BN_bin2bn(SvPV(g_SV, len), len, NULL);
+        DSA_get0_pqg(dsa, &old_p, &old_q, NULL);
+        if (NULL == old_p) {
+            p = BN_new();
+        } else {
+            p = BN_dup(old_p);
+        }
+        if (NULL == p) {
+            BN_free(g);
+            croak("Could not duplicate another prime");
+        }
+        if (NULL == old_q) {
+            q = BN_new();
+        } else {
+            q = BN_dup(old_q);
+        }
+        if (NULL == q) {
+            BN_free(p);
+            BN_free(g);
+            croak("Could not duplicate another prime");
+        }
+        if (!DSA_set0_pqg(dsa, p, q, g)) {
+            BN_free(p);
+            BN_free(q);
+            BN_free(g);
+            croak("Could not set a prime");
+        }
 
 void
 set_pub_key(dsa, pub_key_SV)
@@ -359,9 +551,14 @@ set_pub_key(dsa, pub_key_SV)
         SV * pub_key_SV
     PREINIT:
         int len;
+	    BIGNUM *pub_key;
     CODE:
         len = SvCUR(pub_key_SV);
-        dsa->pub_key = BN_bin2bn(SvPV(pub_key_SV, len), len, NULL);
+        pub_key = BN_bin2bn(SvPV(pub_key_SV, len), len, NULL);
+		if (!DSA_set0_key(dsa, pub_key, NULL)) {
+			BN_free(pub_key);
+			croak("Could not set a key");
+		}
 
 void
 set_priv_key(dsa, priv_key_SV)
@@ -369,9 +566,27 @@ set_priv_key(dsa, priv_key_SV)
         SV * priv_key_SV
     PREINIT:
         int len;
+        const BIGNUM *old_pub_key;
+        BIGNUM *pub_key;
+        BIGNUM *priv_key;
     CODE:
+        DSA_get0_key(dsa, &old_pub_key, NULL);
+        if (NULL == old_pub_key) {
+            pub_key = BN_new();
+            if (NULL == pub_key) {
+                croak("Could not create a dummy public key");
+            }
+            if (!DSA_set0_key(dsa, pub_key, NULL)) {
+                BN_free(pub_key);
+                croak("Could not set a dummy public key");
+            }
+        }
         len = SvCUR(priv_key_SV);
-        dsa->priv_key = BN_bin2bn(SvPV(priv_key_SV, len), len, NULL);
+        priv_key = BN_bin2bn(SvPV(priv_key_SV, len), len, NULL);
+		if (!DSA_set0_key(dsa, NULL, priv_key)) {
+			BN_free(priv_key);
+			croak("Could not set a key");
+		}
 
 MODULE = Crypt::OpenSSL::DSA    PACKAGE = Crypt::OpenSSL::DSA::Signature
 
@@ -393,11 +608,13 @@ SV *
 get_r(dsa_sig)
         DSA_SIG *dsa_sig
     PREINIT:
+        const BIGNUM *r;
         char *to;
         int len;
     CODE:
+        DSA_SIG_get0(dsa_sig, &r, NULL);
         to = malloc(sizeof(char) * 128);
-        len = BN_bn2bin(dsa_sig->r, to);
+        len = BN_bn2bin(r, to);
         RETVAL = newSVpvn(to, len);
         free(to);
     OUTPUT:
@@ -407,11 +624,13 @@ SV *
 get_s(dsa_sig)
         DSA_SIG *dsa_sig
     PREINIT:
+        const BIGNUM *s;
         char *to;
         int len;
     CODE:
+        DSA_SIG_get0(dsa_sig, NULL, &s);
         to = malloc(sizeof(char) * 128);
-        len = BN_bn2bin(dsa_sig->s, to);
+        len = BN_bn2bin(s, to);
         RETVAL = newSVpvn(to, len);
         free(to);
     OUTPUT:
@@ -423,9 +642,27 @@ set_r(dsa_sig, r_SV)
         SV * r_SV
     PREINIT:
         int len;
+		BIGNUM *r;
+        BIGNUM *s;
+        const BIGNUM *old_s;
     CODE:
         len = SvCUR(r_SV);
-        dsa_sig->r = BN_bin2bn(SvPV(r_SV, len), len, NULL);
+        r = BN_bin2bn(SvPV(r_SV, len), len, NULL);
+        DSA_SIG_get0(dsa_sig, NULL, &old_s);
+        if (NULL == old_s) {
+            s = BN_new();
+        } else {
+            s = BN_dup(old_s);
+        }
+        if (NULL == s) {
+            BN_free(r);
+            croak("Could not duplicate another signature value");
+        }
+		if (!DSA_SIG_set0(dsa_sig, r, s)) {
+			BN_free(r);
+            BN_free(s);
+			croak("Could not set a signature");
+		}
 
 void
 set_s(dsa_sig, s_SV)
@@ -433,6 +670,23 @@ set_s(dsa_sig, s_SV)
         SV * s_SV
     PREINIT:
         int len;
+		BIGNUM *s;
+		BIGNUM *r;
+        const BIGNUM *old_r;
     CODE:
         len = SvCUR(s_SV);
-        dsa_sig->s = BN_bin2bn(SvPV(s_SV, len), len, NULL);
+        s = BN_bin2bn(SvPV(s_SV, len), len, NULL);
+        DSA_SIG_get0(dsa_sig, &old_r, NULL);
+        if (NULL == old_r) {
+            r = BN_new();
+        } else {
+            r = BN_dup(old_r);
+        }
+        if (NULL == r) {
+            BN_free(s);
+            croak("Could not duplicate another signature value");
+        }
+		if (!DSA_SIG_set0(dsa_sig, r, s)) {
+			BN_free(s);
+			croak("Could not set a signature");
+		}
