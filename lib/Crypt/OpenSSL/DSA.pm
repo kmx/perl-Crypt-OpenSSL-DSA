@@ -182,7 +182,7 @@ T.J. Mather, E<lt>tjmather@maxmind.comE<gt>
 Copyright (c) 2002 T.J. Mather.  Crypt::OpenSSL::DSA is free software;
 you may redistribute it and/or modify it under the same terms as Perl itself. 
 
-Paid support is available from directly from the author of this package.
+Paid support is available directly from the author of this package.
 Please see L<http://www.maxmind.com/app/opensourceservices> for more details.
 
 =head1 SEE ALSO
