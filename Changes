@@ -1,5 +1,11 @@
 Revision history for Perl extension Crypt::OpenSSL::DSA.
 
+0.16    2016/10/27
+        - Makefile.PL supports OPENSSL_PREFIX or OPENSSL_LIB+OPENSSL_INCLUDE env variables
+        - Makefile.PL tries to find libcrypto via pkg-config
+        - Make the files non-executable
+        - Doc fixes (grammar)
+
 0.15    2015/02/03
         - #84367 Win32 compatibility patch
         - #80369 fix errors in POD. Mainly just missing =over/=back
