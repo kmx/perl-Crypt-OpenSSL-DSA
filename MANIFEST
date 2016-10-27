@@ -1,6 +1,5 @@
 Changes
 DSA.xs
-hints/MSWin32.pl
 lib/Crypt/OpenSSL/DSA.pm
 lib/Crypt/OpenSSL/DSA/Signature.pod
 Makefile.PL
