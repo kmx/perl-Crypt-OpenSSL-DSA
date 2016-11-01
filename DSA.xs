@@ -141,6 +141,8 @@ generate_parameters(CLASS, bits, seed = NULL)
         if (seed) {
           seedpv = SvPV(seed, seed_len);
         }
+        if (seed_len > 0 && seed_len < 20)
+          croak("seed_len (%d) too small)", seed_len);
         dsa = DSA_generate_parameters(bits, seedpv, seed_len, NULL, NULL, NULL, NULL);
         if (!dsa)
           croak("%s", ERR_reason_error_string(ERR_get_error()));

@@ -25,7 +25,7 @@ else {
   }
 my $why_skip = $HAS_SHA1 ? "Need openssl binary in path" : "Need Digest::SHA to test";
 
-my $dsa = Crypt::OpenSSL::DSA->generate_parameters( 512, "foo" );
+my $dsa = Crypt::OpenSSL::DSA->generate_parameters( 512, "fooooooooooooooooooo" );
 $dsa->generate_key;
 
 ok($dsa->write_pub_key("dsa.pub.pem"), 1);

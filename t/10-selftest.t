@@ -9,7 +9,7 @@ BEGIN { plan tests => 36 }
 
 my $message = "foo bar";
 
-my $dsa = Crypt::OpenSSL::DSA->generate_parameters( 512, "foo" );
+my $dsa = Crypt::OpenSSL::DSA->generate_parameters( 512, "fooooooooooooooooooo" );
 
 $dsa->generate_key;
 
