@@ -135,7 +135,7 @@ generate_parameters(CLASS, bits, seed = NULL)
         SV * seed
     PREINIT:
         DSA * dsa;
-        int seed_len = 0;
+        STRLEN seed_len = 0;
         char * seedpv = NULL;
     CODE:
         if (seed) {
@@ -147,7 +147,7 @@ generate_parameters(CLASS, bits, seed = NULL)
           if (bits >= 2048 && seed_len < 32)
             croak("seed_len %d is too small, required min. 32", seed_len);
         }
-        dsa = DSA_generate_parameters(bits, seedpv, seed_len, NULL, NULL, NULL, NULL);
+        dsa = DSA_generate_parameters(bits, seedpv, (int)seed_len, NULL, NULL, NULL, NULL);
         if (!dsa)
           croak("%s", ERR_reason_error_string(ERR_get_error()));
         RETVAL = dsa;
@@ -170,10 +170,10 @@ do_sign(dsa, dgst)
         DSA_SIG * sig;
         char * CLASS = "Crypt::OpenSSL::DSA::Signature";
         char * dgst_pv = NULL;
-        int dgst_len = 0;
+        STRLEN dgst_len = 0;
     CODE:
         dgst_pv = SvPV(dgst, dgst_len);
-        if (!(sig = DSA_do_sign((const unsigned char *) dgst_pv, dgst_len, dsa))) {
+        if (!(sig = DSA_do_sign((const unsigned char *) dgst_pv, (int)dgst_len, dsa))) {
           croak("Error in dsa_sign: %s",ERR_error_string(ERR_get_error(), NULL));
         }
         RETVAL = sig;
@@ -188,7 +188,7 @@ sign(dsa, dgst)
         unsigned char *sigret;
         unsigned int siglen;
         char * dgst_pv = NULL;
-        int dgst_len = 0;
+        STRLEN dgst_len = 0;
     CODE:
         siglen = DSA_size(dsa);
         sigret = malloc(siglen);
@@ -196,7 +196,7 @@ sign(dsa, dgst)
         dgst_pv = SvPV(dgst, dgst_len);
         /* warn("Length of sign [%s] is %d\n", dgst_pv, dgst_len); */
 
-        if (!(DSA_sign(0, (const unsigned char *) dgst_pv, dgst_len, sigret, &siglen, dsa))) {
+        if (!(DSA_sign(0, (const unsigned char *) dgst_pv, (int)dgst_len, sigret, &siglen, dsa))) {
           croak("Error in DSA_sign: %s",ERR_error_string(ERR_get_error(), NULL));
         }
         RETVAL = newSVpvn(sigret, siglen);
@@ -211,13 +211,13 @@ verify(dsa, dgst, sigbuf)
         SV *sigbuf
     PREINIT:
         char * dgst_pv = NULL;
-        int dgst_len = 0;
+        STRLEN dgst_len = 0;
         char * sig_pv = NULL;
-        int sig_len = 0;
+        STRLEN sig_len = 0;
     CODE:
         dgst_pv = SvPV(dgst, dgst_len);
         sig_pv = SvPV(sigbuf, sig_len);
-        RETVAL = DSA_verify(0, dgst_pv, dgst_len, sig_pv, sig_len, dsa);
+        RETVAL = DSA_verify(0, dgst_pv, (int)dgst_len, sig_pv, (int)sig_len, dsa);
         if (RETVAL == -1)
           croak("Error in DSA_verify: %s",ERR_error_string(ERR_get_error(), NULL));
     OUTPUT:
@@ -230,10 +230,10 @@ do_verify(dsa, dgst, sig)
         DSA_SIG *sig
     PREINIT:
         char * dgst_pv = NULL;
-        int dgst_len = 0;
+        STRLEN dgst_len = 0;
     CODE:
         dgst_pv = SvPV(dgst, dgst_len);
-        RETVAL = DSA_do_verify(dgst_pv, dgst_len, sig, dsa);
+        RETVAL = DSA_do_verify(dgst_pv, (int)dgst_len, sig, dsa);
 	if (RETVAL == -1)
 	  croak("Error in DSA_do_verify: %s",ERR_error_string(ERR_get_error(), NULL));
     OUTPUT:
@@ -273,14 +273,14 @@ _load_key(CLASS, private_flag_SV, key_string_SV)
         SV * private_flag_SV;
         SV * key_string_SV;
     PREINIT:
-        int key_string_length;  /* Needed to pass to SvPV */
+        STRLEN key_string_length;  /* Needed to pass to SvPV */
         char *key_string;
         char private_flag;
         BIO *stringBIO;
     CODE:
         private_flag = SvTRUE( private_flag_SV );
         key_string = SvPV( key_string_SV, key_string_length );
-        if( (stringBIO = BIO_new_mem_buf(key_string, key_string_length)) == NULL )
+        if( (stringBIO = BIO_new_mem_buf(key_string, (int)key_string_length)) == NULL )
             croak( "Failed to create memory BIO %s", ERR_error_string(ERR_get_error(), NULL));
         RETVAL = private_flag
             ? PEM_read_bio_DSAPrivateKey( stringBIO, NULL, NULL, NULL )
@@ -433,7 +433,7 @@ set_p(dsa, p_SV)
         DSA *dsa
         SV * p_SV
     PREINIT:
-        int len;
+        STRLEN len;
         BIGNUM *p;
         BIGNUM *q;
         BIGNUM *g;
@@ -441,7 +441,7 @@ set_p(dsa, p_SV)
         const BIGNUM *old_g;
     CODE:
         len = SvCUR(p_SV);
-        p = BN_bin2bn(SvPV(p_SV, len), len, NULL);
+        p = BN_bin2bn(SvPV(p_SV, len), (int)len, NULL);
         DSA_get0_pqg(dsa, NULL, &old_q, &old_g);
         if (NULL == old_q) {
             q = BN_new();
@@ -474,7 +474,7 @@ set_q(dsa, q_SV)
         DSA *dsa
         SV * q_SV
     PREINIT:
-        int len;
+        STRLEN len;
         BIGNUM *p;
         BIGNUM *q;
         BIGNUM *g;
@@ -482,7 +482,7 @@ set_q(dsa, q_SV)
         const BIGNUM *old_g;
     CODE:
         len = SvCUR(q_SV);
-        q = BN_bin2bn(SvPV(q_SV, len), len, NULL);
+        q = BN_bin2bn(SvPV(q_SV, len), (int)len, NULL);
         DSA_get0_pqg(dsa, &old_p, NULL, &old_g);
         if (NULL == old_p) {
             p = BN_new();
@@ -515,7 +515,7 @@ set_g(dsa, g_SV)
         DSA *dsa
         SV * g_SV
     PREINIT:
-        int len;
+        STRLEN len;
         BIGNUM *p;
         BIGNUM *q;
         BIGNUM *g;
@@ -523,7 +523,7 @@ set_g(dsa, g_SV)
         const BIGNUM *old_q;
     CODE:
         len = SvCUR(g_SV);
-        g = BN_bin2bn(SvPV(g_SV, len), len, NULL);
+        g = BN_bin2bn(SvPV(g_SV, len), (int)len, NULL);
         DSA_get0_pqg(dsa, &old_p, &old_q, NULL);
         if (NULL == old_p) {
             p = BN_new();
@@ -556,11 +556,11 @@ set_pub_key(dsa, pub_key_SV)
         DSA *dsa
         SV * pub_key_SV
     PREINIT:
-        int len;
+        STRLEN len;
 	    BIGNUM *pub_key;
     CODE:
         len = SvCUR(pub_key_SV);
-        pub_key = BN_bin2bn(SvPV(pub_key_SV, len), len, NULL);
+        pub_key = BN_bin2bn(SvPV(pub_key_SV, len), (int)len, NULL);
 		if (!DSA_set0_key(dsa, pub_key, NULL)) {
 			BN_free(pub_key);
 			croak("Could not set a key");
@@ -571,7 +571,7 @@ set_priv_key(dsa, priv_key_SV)
         DSA *dsa
         SV * priv_key_SV
     PREINIT:
-        int len;
+        STRLEN len;
         const BIGNUM *old_pub_key;
         BIGNUM *pub_key;
         BIGNUM *priv_key;
@@ -588,7 +588,7 @@ set_priv_key(dsa, priv_key_SV)
             }
         }
         len = SvCUR(priv_key_SV);
-        priv_key = BN_bin2bn(SvPV(priv_key_SV, len), len, NULL);
+        priv_key = BN_bin2bn(SvPV(priv_key_SV, len), (int)len, NULL);
 		if (!DSA_set0_key(dsa, NULL, priv_key)) {
 			BN_free(priv_key);
 			croak("Could not set a key");
@@ -647,13 +647,13 @@ set_r(dsa_sig, r_SV)
         DSA_SIG *dsa_sig
         SV * r_SV
     PREINIT:
-        int len;
+        STRLEN len;
 		BIGNUM *r;
         BIGNUM *s;
         const BIGNUM *old_s;
     CODE:
         len = SvCUR(r_SV);
-        r = BN_bin2bn(SvPV(r_SV, len), len, NULL);
+        r = BN_bin2bn(SvPV(r_SV, len), (int)len, NULL);
         DSA_SIG_get0(dsa_sig, NULL, &old_s);
         if (NULL == old_s) {
             s = BN_new();
@@ -675,13 +675,13 @@ set_s(dsa_sig, s_SV)
         DSA_SIG *dsa_sig
         SV * s_SV
     PREINIT:
-        int len;
+        STRLEN len;
 		BIGNUM *s;
 		BIGNUM *r;
         const BIGNUM *old_r;
     CODE:
         len = SvCUR(s_SV);
-        s = BN_bin2bn(SvPV(s_SV, len), len, NULL);
+        s = BN_bin2bn(SvPV(s_SV, len), (int)len, NULL);
         DSA_SIG_get0(dsa_sig, &old_r, NULL);
         if (NULL == old_r) {
             r = BN_new();
