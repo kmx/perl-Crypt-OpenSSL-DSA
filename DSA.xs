@@ -143,9 +143,9 @@ generate_parameters(CLASS, bits, seed = NULL)
         }
         if (seed_len > 0) {
           if (bits < 2048 && seed_len < 20)
-            croak("seed_len %d is too small, required min. 20)", seed_len);
+            croak("seed_len %d is too small, required min. 20", seed_len);
           if (bits >= 2048 && seed_len < 32)
-            croak("seed_len %d is too small, required min. 32)", seed_len);
+            croak("seed_len %d is too small, required min. 32", seed_len);
         }
         dsa = DSA_generate_parameters(bits, seedpv, seed_len, NULL, NULL, NULL, NULL);
         if (!dsa)
