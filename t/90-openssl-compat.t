@@ -74,7 +74,7 @@ sub openssl_verify {
     # FIXME: shutup openssl from spewing to STDOUT the "Verification
     # OK".  can we depend on reading "Verification OK" from the
     # open("-|", "openssl") open mode due to portability?
-    my $rv = system("openssl", "dgst", "-dss1", "-verify", $public_pem_file, "-signature", "$sig_temp", "$msg_temp");
+    my $rv = system("openssl", "dgst", "-sha1", "-verify", $public_pem_file, "-signature", "$sig_temp", "$msg_temp");
     return 0 if $rv;
     return 1;
 }

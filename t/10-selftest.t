@@ -5,7 +5,7 @@ use strict;
 use Test;
 use Crypt::OpenSSL::DSA;
 
-BEGIN { plan tests => 30 }
+BEGIN { plan tests => 36 }
 
 my $message = "foo bar";
 
@@ -100,6 +100,22 @@ ok($dsa3->verify($message, $dsa_sig3), 1);
 ok($dsa4->verify($message, $dsa_sig3), 1);
 ok($dsa5->verify($message, $dsa_sig3), 1);
 ok($dsa6->verify($message, $dsa_sig3), 1);
+
+# Check setting private key before public key.
+# This is not suppored by OpenSSL-1.1.0.
+my $dsa7 = Crypt::OpenSSL::DSA->new();
+$dsa7->set_p($p);
+$dsa7->set_q($q);
+$dsa7->set_g($g);
+ok($dsa7->get_p,$p);
+ok($dsa7->get_q,$q);
+ok($dsa7->get_g,$g);
+$dsa7->set_priv_key($priv_key);
+ok($dsa7->get_priv_key,$priv_key);
+my $dsa_sig4 = $dsa7->sign($message);
+$dsa7->set_pub_key($pub_key);
+ok($dsa7->get_pub_key,$pub_key);
+ok($dsa7->verify($message, $dsa_sig4), 1);
 
 unlink("dsa.param.pem");
 unlink("dsa.priv.pem");
