@@ -27,6 +27,7 @@ WriteMakefile(
     'NAME'              => 'Crypt::OpenSSL::DSA',
     'VERSION_FROM'      => 'lib/Crypt/OpenSSL/DSA.pm', # finds $VERSION
     'LICENSE'           => 'perl_5',
+    'MIN_PERL_VERSION'  => '5.006',
     'PREREQ_PM'         => {}, # e.g., Module::Name => 1.1
     'AUTHOR'            => 'T.J. Mather',
     'LIBS'              => [ $lib ],
