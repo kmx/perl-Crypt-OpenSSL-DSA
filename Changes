@@ -1,7 +1,8 @@
 Revision history for Perl extension Crypt::OpenSSL::DSA.
 
-0.18    2016/11/01
+0.18    2016/11/17
         - OpenSSL 1.1.0 compatibility
+        - fix Kwalitee Issues
 
 0.17    2016/10/27
         - Makefile.PL fixing v0.16
