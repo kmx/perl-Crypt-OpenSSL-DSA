@@ -2,9 +2,9 @@ Changes
 DSA.xs
 lib/Crypt/OpenSSL/DSA.pm
 lib/Crypt/OpenSSL/DSA/Signature.pod
+LICENSE
 Makefile.PL
 MANIFEST
-META.yml			Module meta-data (added by MakeMaker)
 README
 t/00-use.t
 t/10-selftest.t

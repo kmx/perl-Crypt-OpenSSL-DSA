@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+use Config;
 use ExtUtils::MakeMaker;
 
 my $lib = '-lcrypto';
@@ -21,9 +24,10 @@ elsif ($^O eq 'MSWin32') {
 }
 
 WriteMakefile(
-    'NAME'		=> 'Crypt::OpenSSL::DSA',
-    'VERSION_FROM'	=> 'lib/Crypt/OpenSSL/DSA.pm', # finds $VERSION
-    'PREREQ_PM'		=> {}, # e.g., Module::Name => 1.1
+    'NAME'              => 'Crypt::OpenSSL::DSA',
+    'VERSION_FROM'      => 'lib/Crypt/OpenSSL/DSA.pm', # finds $VERSION
+    'LICENSE'           => 'perl_5',
+    'PREREQ_PM'         => {}, # e.g., Module::Name => 1.1
     'AUTHOR'            => 'T.J. Mather',
     'LIBS'              => [ $lib ],
     'INC'               => $inc,
