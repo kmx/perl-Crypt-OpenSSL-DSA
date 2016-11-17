@@ -137,19 +137,21 @@ generate_parameters(CLASS, bits, seed = NULL)
         DSA * dsa;
         STRLEN seed_len = 0;
         char * seedpv = NULL;
+        unsigned long err;
     CODE:
         if (seed) {
           seedpv = SvPV(seed, seed_len);
         }
-        if (seed_len > 0) {
-          if (bits < 2048 && seed_len < 20)
-            croak("seed_len %d is too small, required min. 20", seed_len);
-          if (bits >= 2048 && seed_len < 32)
-            croak("seed_len %d is too small, required min. 32", seed_len);
-        }
         dsa = DSA_generate_parameters(bits, seedpv, (int)seed_len, NULL, NULL, NULL, NULL);
-        if (!dsa)
-          croak("%s", ERR_reason_error_string(ERR_get_error()));
+        if (!dsa) {
+          err = ERR_get_error();
+          if (err == 0) {
+            croak("DSA_generate_parameters() returned NULL");
+          }
+          else {
+            croak("%s", ERR_reason_error_string(err));
+          }
+        }
         RETVAL = dsa;
     OUTPUT:
         RETVAL
