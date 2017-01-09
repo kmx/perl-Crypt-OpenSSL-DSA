@@ -13,6 +13,7 @@ extern "C" {
 #include <openssl/pem.h>
 #include <openssl/dsa.h>
 #include <openssl/ssl.h>
+#include <openssl/opensslv.h>
 
 #ifdef __cplusplus
 }
@@ -112,7 +113,9 @@ MODULE = Crypt::OpenSSL::DSA         PACKAGE = Crypt::OpenSSL::DSA
 PROTOTYPES: DISABLE
 
 BOOT:
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     ERR_load_crypto_strings();
+#endif
 
 DSA *
 new(CLASS)
@@ -142,8 +145,13 @@ generate_parameters(CLASS, bits, seed = NULL)
         if (seed) {
           seedpv = SvPV(seed, seed_len);
         }
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         dsa = DSA_generate_parameters(bits, seedpv, (int)seed_len, NULL, NULL, NULL, NULL);
         if (!dsa) {
+#else
+	dsa = DSA_new();
+	if (!DSA_generate_parameters_ex(dsa, bits, seedpv, (int)seed_len, NULL, NULL, NULL)) {
+#endif
           err = ERR_get_error();
           if (err == 0) {
             croak("DSA_generate_parameters() returned NULL");
