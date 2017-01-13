@@ -6,6 +6,7 @@ use ExtUtils::MakeMaker;
 my $lib = '-lcrypto';
 my $inc = '';
 my $nul = $^O eq 'MSWin32' ? 'nul' : '/dev/null';
+
 if (my $dir = $ENV{OPENSSL_PREFIX}) {
   $lib = "-L$dir/lib -lcrypto";
   $inc = "-I$dir/include";
@@ -19,8 +20,8 @@ elsif (`pkg-config --modversion libcrypto 2>$nul`) {
   $inc = `pkg-config --cflags libcrypto 2> $nul`;
 }
 elsif ($^O eq 'MSWin32') {
-  $lib = ['-llibeay32'] if $Config{cc} =~ /cl/;
-  $lib = ['-leay32']    if $Config{cc} =~ /gcc/;
+  $lib = '-llibeay32' if $Config{cc} =~ /cl/;
+  $lib = '-leay32'    if $Config{cc} =~ /gcc/;
 }
 
 WriteMakefile(
@@ -38,5 +39,5 @@ WriteMakefile(
         repository => 'https://github.com/kmx/perl-Crypt-OpenSSL-DSA',
       },
     },
-    dist => { TARFLAGS => '--owner=0 --group=0 -cvf' }, 
+    dist => { TARFLAGS => '--owner=0 --group=0 -cvf' },
 );
