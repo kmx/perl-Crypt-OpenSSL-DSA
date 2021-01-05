@@ -172,6 +172,14 @@ generate_key(dsa)
     OUTPUT:
         RETVAL
 
+int
+get_sig_size(dsa)
+        DSA * dsa
+    CODE:
+        RETVAL = DSA_size(dsa);
+    OUTPUT:
+        RETVAL
+
 DSA_SIG *
 do_sign(dsa, dgst)
         DSA * dsa
