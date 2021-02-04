@@ -107,6 +107,11 @@ The string should include the -----BEGIN...----- and -----END...----- lines.
 Generates private and public keys, assuming that $dsa is the return
 value of generate_parameters.
 
+=item $sig_size = $dsa->get_sig_size( );
+
+Returns the maximum size of an ASN.1 encoded DSA signature for key
+dsa in bytes.
+
 =item $sig = $dsa->sign( $message );
 
 Signs $message, returning the signature.  Note that $meesage cannot exceed
