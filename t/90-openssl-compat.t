@@ -8,6 +8,7 @@ use strict;
 
 use Test;
 use Crypt::OpenSSL::DSA;
+use File::Temp 0.14;
 
 BEGIN { plan tests => 84 }
 
@@ -28,12 +29,14 @@ my $why_skip = $HAS_SHA1 ? "Need openssl binary in path" : "Need Digest::SHA to 
 my $dsa = Crypt::OpenSSL::DSA->generate_parameters( 512, "fooooooooooooooooooo" );
 $dsa->generate_key;
 
-ok($dsa->write_pub_key("dsa.pub.pem"), 1);
-ok($dsa->write_priv_key("dsa.priv.pem"), 1);
+my $pub_file = File::Temp->new();
+my $priv_file = File::Temp->new();
+ok($dsa->write_pub_key($pub_file), 1);
+ok($dsa->write_priv_key($priv_file), 1);
 
-my $dsa_pub = Crypt::OpenSSL::DSA->read_pub_key("dsa.pub.pem");
+my $dsa_pub = Crypt::OpenSSL::DSA->read_pub_key($pub_file);
 ok($dsa_pub);
-my $dsa_priv = Crypt::OpenSSL::DSA->read_priv_key("dsa.priv.pem");
+my $dsa_priv = Crypt::OpenSSL::DSA->read_priv_key($priv_file);
 ok($dsa_priv);
 
 my $to_do = 500;
@@ -50,7 +53,7 @@ if ($testable) {
         my $sig = $dsa_priv->sign($msg);
 
         my $we_think       = $dsa_pub->verify($msg, $sig);
-        my $openssl_think  = openssl_verify("dsa.pub.pem", $sig, $plain);
+        my $openssl_think  = openssl_verify($pub_file, $sig, $plain);
 
         ok($we_think, 1);
         ok($openssl_think, 1);
@@ -61,14 +64,10 @@ if ($testable) {
     }
 }
 
-unlink("dsa.priv.pem");
-unlink("dsa.pub.pem");
-
 sub openssl_verify {
     my ($public_pem_file, $sig, $msg_plain) = @_;
-    require File::Temp;
-    my $sig_temp = new File::Temp(TEMPLATE => "tmp.signatureXXXX") or die;
-    my $msg_temp = new File::Temp(TEMPLATE => "tmp.msgXXXX") or die;
+    my $sig_temp = File::Temp->new();
+    my $msg_temp = File::Temp->new();
     syswrite($sig_temp,$sig);
     syswrite($msg_temp,$msg_plain);
     # FIXME: shutup openssl from spewing to STDOUT the "Verification
