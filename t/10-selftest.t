@@ -4,6 +4,7 @@ use strict;
 
 use Test;
 use Crypt::OpenSSL::DSA;
+use File::Temp 0.14;
 
 BEGIN { plan tests => 36 }
 
@@ -44,25 +45,24 @@ ok($dsa->do_verify($message, $dsa_sig_obj1), 1);
 ok($dsa->do_verify($message, $dsa_sig_obj2), 1);
 ok($dsa->do_verify($message, $dsa_sig_obj_bogus), 0);
 
-ok($dsa->write_params("dsa.param.pem"), 1);
-ok($dsa->write_pub_key("dsa.pub.pem"), 1);
-ok($dsa->write_priv_key("dsa.priv.pem"), 1);
+my $param_file = File::Temp->new();
+my $pub_file = File::Temp->new();
+my $priv_file = File::Temp->new();
+ok($dsa->write_params($param_file), 1);
+ok($dsa->write_pub_key($pub_file), 1);
+ok($dsa->write_priv_key($priv_file), 1);
 
 my ($priv_key_str, $pub_key_str);
 {
   local($/) = undef;
-  open PRIV, "dsa.priv.pem";
-  $priv_key_str = <PRIV>;
-  close PRIV;
-  open PUB, "dsa.pub.pem";
-  $pub_key_str = <PUB>;
-  close PUB;
+  $priv_key_str = <$priv_file>;
+  $pub_key_str = <$pub_file>;
 }
 
-my $dsa2 = Crypt::OpenSSL::DSA->read_priv_key("dsa.priv.pem");
+my $dsa2 = Crypt::OpenSSL::DSA->read_priv_key($priv_file);
 my $dsa_sig2 = $dsa2->sign($message);
 
-my $dsa3 = Crypt::OpenSSL::DSA->read_pub_key("dsa.pub.pem");
+my $dsa3 = Crypt::OpenSSL::DSA->read_pub_key($pub_file);
 
 my $dsa4 = Crypt::OpenSSL::DSA->read_priv_key_str($priv_key_str);
 my $dsa5 = Crypt::OpenSSL::DSA->read_pub_key_str($pub_key_str);
@@ -116,8 +116,4 @@ my $dsa_sig4 = $dsa7->sign($message);
 $dsa7->set_pub_key($pub_key);
 ok($dsa7->get_pub_key,$pub_key);
 ok($dsa7->verify($message, $dsa_sig4), 1);
-
-unlink("dsa.param.pem");
-unlink("dsa.priv.pem");
-unlink("dsa.pub.pem");
 
