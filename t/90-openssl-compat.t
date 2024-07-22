@@ -11,19 +11,19 @@ use Crypt::OpenSSL::DSA;
 
 BEGIN { plan tests => 84 }
 
-my $HAS_SHA1 = eval "use Digest::SHA; 1;";
+my $HAS_SHA = eval "use Digest::SHA; 1;";
 my ($OPEN_SSL, $testable);
 if($^O !~ /mswin32/i) {
   $OPEN_SSL = `which openssl` || "/usr/bin/openssl";
   chomp $OPEN_SSL;
-  $testable = -x $OPEN_SSL && $HAS_SHA1;
+  $testable = -x $OPEN_SSL && $HAS_SHA;
   }
 else {
   $OPEN_SSL = "openssl";
   eval{`openssl version`};
-  if(!$@) {$testable = 1 && $HAS_SHA1}
+  if(!$@) {$testable = 1 && $HAS_SHA}
   }
-my $why_skip = $HAS_SHA1 ? "Need openssl binary in path" : "Need Digest::SHA to test";
+my $why_skip = $HAS_SHA ? "Need openssl binary in path" : "Need Digest::SHA to test";
 
 my $dsa = Crypt::OpenSSL::DSA->generate_parameters( 512, "fooooooooooooooooooo" );
 $dsa->generate_key;
@@ -43,7 +43,7 @@ if ($testable) {
     my %done;  # { zero => $ct, nonzero => $ct }
     for (1..$to_do) {
         my $plain = "This is test number $_";
-        my $msg = Digest::SHA::sha1($plain);
+        my $msg = Digest::SHA::sha512($plain);
         my $type = ($msg =~ /\x00/) ? "zero" : "nonzero";
         next if $done{$type}++ >= $of_each;
 
@@ -74,7 +74,7 @@ sub openssl_verify {
     # FIXME: shutup openssl from spewing to STDOUT the "Verification
     # OK".  can we depend on reading "Verification OK" from the
     # open("-|", "openssl") open mode due to portability?
-    my $rv = system("openssl", "dgst", "-sha1", "-verify", $public_pem_file, "-signature", "$sig_temp", "$msg_temp");
+    my $rv = system("openssl", "dgst", "-sha512", "-verify", $public_pem_file, "-signature", "$sig_temp", "$msg_temp");
     return 0 if $rv;
     return 1;
 }
